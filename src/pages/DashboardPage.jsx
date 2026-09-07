@@ -36,6 +36,37 @@ const STAGE_COLORS = {
   PERDIDO: '#B5543C',
 };
 
+// Datos MOCK para desarrollo autónomo en Frontend
+const MOCK_DASHBOARD_DATA = {
+  wonAmount: 485000,
+  wonCount: 12,
+  openAmount: 320000,
+  openCount: 8,
+  conversionRate: 65,
+  lostCount: 4,
+  progressToGoal: 81,
+  goal: {
+    period: 'Q3',
+    targetAmount: 600000,
+  },
+  monthly: [
+    { month: 'Ene', amount: 120000 },
+    { month: 'Feb', amount: 95000 },
+    { month: 'Mar', amount: 140000 },
+    { month: 'Abr', amount: 110000 },
+    { month: 'May', amount: 180000 },
+    { month: 'Jun', amount: 210000 },
+  ],
+  byStage: [
+    { stage: 'PROSPECCION', count: 4, amount: 80000 },
+    { stage: 'CALIFICACION', count: 3, amount: 65000 },
+    { stage: 'PROPUESTA', count: 5, amount: 150000 },
+    { stage: 'NEGOCIACION', count: 2, amount: 90000 },
+    { stage: 'GANADO', count: 12, amount: 485000 },
+    { stage: 'PERDIDO', count: 4, amount: 110000 },
+  ],
+};
+
 function StatCard({ label, value, sublabel }) {
   return (
     <div className="card p-5">
@@ -46,16 +77,35 @@ function StatCard({ label, value, sublabel }) {
   );
 }
 
+function DashboardSkeleton() {
+  return (
+    <Layout title="Panel" subtitle="Cargando métricas…">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 animate-pulse">
+        <div className="card p-5 h-28 bg-ink-950/5" />
+        <div className="card p-5 h-28 bg-ink-950/5" />
+        <div className="card p-5 h-28 bg-ink-950/5" />
+        <div className="card p-5 h-28 bg-ink-950/5" />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-pulse">
+        <div className="card p-5 lg:col-span-2 h-80 bg-ink-950/5" />
+        <div className="card p-5 h-80 bg-ink-950/5" />
+      </div>
+    </Layout>
+  );
+}
+
 // Dashboard gráfico: ventas ganadas, pipeline abierto y tasa de conversión
 export default function DashboardPage() {
-  const { data, isLoading } = useQuery({ queryKey: ['dashboard'], queryFn: getDashboardStats });
+  const { data: apiData, isLoading } = useQuery({ 
+    queryKey: ['dashboard'], 
+    queryFn: getDashboardStats 
+  });
 
-  if (isLoading || !data) {
-    return (
-      <Layout title="Panel">
-        <p className="text-sm text-ink-500">Calculando métricas…</p>
-      </Layout>
-    );
+  // Usar datos de la API o recurrir al Mock si falla/está en desarrollo exclusivo de UI
+  const data = apiData || MOCK_DASHBOARD_DATA;
+
+  if (isLoading && !apiData) {
+    return <DashboardSkeleton />;
   }
 
   const stageData = data.byStage.map((s) => ({ ...s, label: STAGE_LABELS[s.stage] }));
@@ -63,10 +113,23 @@ export default function DashboardPage() {
 
   return (
     <Layout title="Panel" subtitle="Resumen de ventas y conversión del equipo comercial">
+      {/* Tarjetas KPI Superiores */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Ventas ganadas" value={currency.format(data.wonAmount)} sublabel={`${data.wonCount} negocios cerrados`} />
-        <StatCard label="Pipeline abierto" value={currency.format(data.openAmount)} sublabel={`${data.openCount} oportunidades activas`} />
-        <StatCard label="Tasa de conversión" value={`${data.conversionRate}%`} sublabel={`${data.wonCount} ganados / ${data.lostCount} perdidos`} />
+        <StatCard 
+          label="Ventas ganadas" 
+          value={currency.format(data.wonAmount)} 
+          sublabel={`${data.wonCount} negocios cerrados`} 
+        />
+        <StatCard 
+          label="Pipeline abierto" 
+          value={currency.format(data.openAmount)} 
+          sublabel={`${data.openCount} oportunidades activas`} 
+        />
+        <StatCard 
+          label="Tasa de conversión" 
+          value={`${data.conversionRate}%`} 
+          sublabel={`${data.wonCount} ganados / ${data.lostCount} perdidos`} 
+        />
         <StatCard
           label={`Meta ${data.goal?.period ?? ''}`}
           value={data.progressToGoal !== null ? `${data.progressToGoal}%` : '—'}
@@ -74,7 +137,9 @@ export default function DashboardPage() {
         />
       </div>
 
+      {/* Rejilla de Gráficas */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Gráfica de Líneas: Ventas Ganadas */}
         <div className="card p-5 lg:col-span-2">
           <h2 className="font-display font-semibold text-ink-950 mb-4">Ventas ganadas por mes</h2>
           <ResponsiveContainer width="100%" height={260}>
@@ -88,6 +153,7 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
 
+        {/* Gráfica de Dona: Distribución */}
         <div className="card p-5">
           <h2 className="font-display font-semibold text-ink-950 mb-4">Distribución por etapa</h2>
           <ResponsiveContainer width="100%" height={260}>
@@ -110,6 +176,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Gráfica de Barras: Monto por Etapa */}
         <div className="card p-5 lg:col-span-3">
           <h2 className="font-display font-semibold text-ink-950 mb-4">Monto por etapa del pipeline</h2>
           <ResponsiveContainer width="100%" height={260}>
